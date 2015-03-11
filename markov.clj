@@ -46,4 +46,4 @@
   ([user m first-word] (flatten (generate-sentence (get m user) first-word)))
   )
 ;
-;(println (get-user (second *command-line-args*) (parse-logs (read-log (first *command-line-args*)))))
+(println (get-user (second *command-line-args*) (parse-logs (read-log (first *command-line-args*)))))
