@@ -45,5 +45,6 @@
   ([user m] (flatten (let [col (get m user)] (generate-sentence col (rand-nth (keys col))))))
   ([user m first-word] (flatten (generate-sentence (get m user) first-word)))
   )
-;
+
+
 (println (get-user (second *command-line-args*) (parse-logs (read-log (first *command-line-args*)))))
