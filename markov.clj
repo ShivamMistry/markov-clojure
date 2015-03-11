@@ -1,21 +1,21 @@
 (require '[clojure.string :as str])
 
+(def n-g 3)
+
 (defn read-log [file]
-  (let [matcher (map (partial re-matcher #".+?<(.+?)>\s+?(.+)") (str/split-lines (slurp file)))] 
+  (let [matcher (map (partial re-matcher #".*?<\s*(.+?)>\s+?(.+)") (str/split-lines (slurp file)))] 
     (map (comp rest re-groups) (filter #(.matches %) matcher)))
   )
 
 (defn parse-line [text]
   (let [x (str/split (.replaceAll (str/lower-case text) "[^0-9a-z ]" "") #" ")]
-    (partition 2 1 x))
+    (partition (inc n-g) 1 x))
   )
 
 (defn merge-maps [entries]
   (zipmap 
     (keys entries)
-    (map #(apply merge-with 
-                 (fn [res latter] (conj (if (seq? (first res)) res (list res)) latter)) %) 
-         (vals entries)))
+    (map #(apply merge-with into %)  (vals entries)))
   )
 
 (defn make-ngrams [entries] 
@@ -23,7 +23,7 @@
     (zipmap 
       (keys entries) 
       (map 
-        (fn [a] (map (fn [x] (assoc nil (first x) (rest x))) a)) 
+        (fn [a] (map (fn [x] (assoc nil (butlast x) (list (last x)))) a)) 
         (vals entries))))
   )
 
@@ -33,18 +33,19 @@
            (map #(assoc nil (first %) (parse-line (first (rest %)))) entries)))
   )
 
-(defn generate-sentence[ngrams first-word]
-  (if (nil? first-word) nil
-    (let [x (get ngrams first-word)]
-      (let [word (rand-nth x)]
-        (cons first-word (generate-sentence ngrams (if (seq? word) (first word) word)))
+(defn generate-sentence[ngrams head]
+  (let [word (rand-nth (get ngrams head)) l (vec head)]
+    (if (nil? word) nil
+      (let [chain (generate-sentence ngrams (conj (vec (nthrest l 1)) word))]
+        (conj (vec (take 1 head)) (if (nil? chain) (conj nil word (drop 1 l))  chain))
         )
       )
     )
+
   )
 
-(defn get-user [user m]
-  (let [col (get m user)] (generate-sentence col (rand-nth (keys col))))
+(defn get-user 
+  ([user m] (flatten (let [col (get m user)] (generate-sentence col (rand-nth (keys col))))))
+  ([user m first-word] (flatten (generate-sentence (get m user) first-word)))
   )
-
 (println (get-user (second *command-line-args*) (parse-logs (read-log (first *command-line-args*)))))
